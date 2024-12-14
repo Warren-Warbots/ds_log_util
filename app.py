@@ -7,20 +7,20 @@ from pathlib import Path
 import traceback
 
 # Configuration
-ROBOT_IP = "localhost"
-ROBOT_USER = "lvuser"
+RIO_IP = "localhost"
+RIO_USER = "lvuser"
 LOG_PATH = Path("/media/sda1/logs/")
 LOCAL_LOG_DIR = Path("C:/robot_logs")
-SYNC_INTERVAL = 60  # 1 min
+SYNC_INTERVAL = 60
 
 LOCAL_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-NetworkTables.initialize(server=ROBOT_IP)
+NetworkTables.initialize(server=RIO_IP)
 
 def sync_logs():
     print("starting sync")
     try:
-        if ROBOT_IP!="localhost":
+        if RIO_IP!="localhost":
             subprocess.run(
                 [
                     "robocopy",
@@ -40,9 +40,11 @@ def sync_logs():
 
 def value_changed(source, key, value, is_new, state):
     try:
+        
         fms_control_data = bin(int(value))[2:]
-        is_enabled = fms_control_data[-1] == "1"
-        is_connected_to_fms = fms_control_data[1] == "1"
+        
+        is_enabled = fms_control_data[-1] == "1" if fms_control_data!='0' else False
+        is_connected_to_fms = fms_control_data[1] == "1" if fms_control_data!='0' else False
 
         if state["is_robot_enabled"] is None:
             state["is_robot_enabled"] = is_enabled
@@ -64,8 +66,7 @@ def main():
     last_sync_time = time.time() 
     while True:
         try:
-            print(state)
-            time.sleep(1)
+            time.sleep(1) #change to larger delay when not testing
             if not state["is_robot_enabled"]:  
                 if time.time() - last_sync_time > SYNC_INTERVAL:
                     print("regular sync")
